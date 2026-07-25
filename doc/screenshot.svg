@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1163" height="419" viewBox="0 0 1163 419" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,&quot;DejaVu Sans Mono&quot;,monospace" font-size="13">
+<rect width="1163" height="419" rx="8" fill="#1b1e24"/>
+<circle cx="24" cy="15" r="5.5" fill="#e06c75"/>
+<circle cx="40" cy="15" r="5.5" fill="#e5c07b"/>
+<circle cx="56" cy="15" r="5.5" fill="#98c379"/>
+<rect x="18.0" y="31.0" width="48.3" height="19.0" fill="#56b6c2"/>
+<text x="18.0" y="44.0" fill="#1b1e24" font-weight="600" xml:space="preserve"> gaff </text>
+<text x="66.3" y="44.0" fill="#c5cad3" xml:space="preserve">  5 agents in 3 projects</text>
+<text x="259.5" y="44.0" fill="#e5c07b" xml:space="preserve">  3 busy</text>
+<text x="323.9" y="44.0" fill="#98c379" font-weight="600" xml:space="preserve">  1 waiting</text>
+<text x="18.0" y="63.0" fill="#6b7387" font-weight="600" xml:space="preserve"> NAME             STATUS    WHERE                           BRANCH                 DOING                                             FOR    </text>
+<text x="26.1" y="82.0" fill="#ffffff" font-weight="600" xml:space="preserve">cavalry</text>
+<text x="82.4" y="82.0" fill="#6b7387" xml:space="preserve"> ×2</text>
+<text x="243.4" y="82.0" fill="#6b7387" xml:space="preserve">~/projects/cavalry             </text>
+<rect x="18.0" y="88.0" width="144.9" height="19.0" fill="#2b303b"/>
+<text x="18.0" y="101.0" fill="#c5cad3" font-weight="600" xml:space="preserve">▌  cavalry-a1     </text>
+<rect x="162.9" y="88.0" width="72.5" height="19.0" fill="#2b303b"/>
+<text x="162.9" y="101.0" fill="#98c379" font-weight="600" xml:space="preserve">waiting  </text>
+<rect x="235.4" y="88.0" width="8.1" height="19.0" fill="#2b303b"/>
+<rect x="243.4" y="88.0" width="249.6" height="19.0" fill="#2b303b"/>
+<text x="243.4" y="101.0" fill="#61afef" font-weight="600" xml:space="preserve">—                              </text>
+<rect x="493.0" y="88.0" width="8.1" height="19.0" fill="#2b303b"/>
+<rect x="501.0" y="88.0" width="177.1" height="19.0" fill="#2b303b"/>
+<text x="501.0" y="101.0" fill="#56b6c2" font-weight="600" xml:space="preserve">feat/bool-variables   </text>
+<rect x="678.1" y="88.0" width="410.6" height="19.0" fill="#2b303b"/>
+<text x="678.1" y="101.0" fill="#c5cad3" font-weight="600" xml:space="preserve"> Add bool variables to the Hoare logic frontend    </text>
+<rect x="1088.7" y="88.0" width="56.4" height="19.0" fill="#2b303b"/>
+<text x="1088.7" y="101.0" fill="#98c379" font-weight="600" xml:space="preserve">6m     </text>
+<text x="26.1" y="120.0" fill="#c5cad3" font-weight="600" xml:space="preserve">  cavalry-7c    </text>
+<text x="162.9" y="120.0" fill="#e5c07b" xml:space="preserve">busy     </text>
+<text x="243.4" y="120.0" fill="#61afef" xml:space="preserve">—                              </text>
+<text x="501.0" y="120.0" fill="#56b6c2" xml:space="preserve">feat/bool-variables   </text>
+<text x="678.1" y="120.0" fill="#c5cad3" xml:space="preserve"> Benchmark Z3 against the native solver path       </text>
+<text x="1088.7" y="120.0" fill="#e5c07b" xml:space="preserve">23m    </text>
+<text x="26.1" y="139.0" fill="#ffffff" font-weight="600" xml:space="preserve">gaff</text>
+<text x="243.4" y="139.0" fill="#6b7387" xml:space="preserve">~/projects/gaff                </text>
+<text x="26.1" y="158.0" fill="#c5cad3" font-weight="600" xml:space="preserve">  gaff-b6       </text>
+<text x="162.9" y="158.0" fill="#e5c07b" xml:space="preserve">busy     </text>
+<text x="243.4" y="158.0" fill="#61afef" xml:space="preserve">—                              </text>
+<text x="501.0" y="158.0" fill="#56b6c2" xml:space="preserve">main                  </text>
+<text x="678.1" y="158.0" fill="#c5cad3" xml:space="preserve"> Render the README header as a terminal SVG        </text>
+<text x="1088.7" y="158.0" fill="#e5c07b" xml:space="preserve">5m     </text>
+<text x="26.1" y="177.0" fill="#ffffff" font-weight="600" xml:space="preserve">site</text>
+<text x="58.2" y="177.0" fill="#6b7387" xml:space="preserve"> ×2</text>
+<text x="243.4" y="177.0" fill="#6b7387" xml:space="preserve">~/projects/writing/site        </text>
+<text x="26.1" y="196.0" fill="#c5cad3" font-weight="600" xml:space="preserve">  site-db       </text>
+<text x="162.9" y="196.0" fill="#6b7387" xml:space="preserve">idle     </text>
+<text x="243.4" y="196.0" fill="#c678dd" xml:space="preserve">⑂ centred-tables               </text>
+<text x="501.0" y="196.0" fill="#56b6c2" xml:space="preserve">worktree-centred-tabl…</text>
+<text x="678.1" y="196.0" fill="#c5cad3" xml:space="preserve"> Centre tables and handle horizontal overflow      </text>
+<text x="1088.7" y="196.0" fill="#6b7387" xml:space="preserve">14m    </text>
+<text x="26.1" y="215.0" fill="#c5cad3" font-weight="600" xml:space="preserve">  site-f2       </text>
+<text x="162.9" y="215.0" fill="#e5c07b" xml:space="preserve">busy     </text>
+<text x="243.4" y="215.0" fill="#61afef" xml:space="preserve">—                              </text>
+<text x="501.0" y="215.0" fill="#56b6c2" xml:space="preserve">article/geography-of-…</text>
+<text x="678.1" y="215.0" fill="#c5cad3" xml:space="preserve"> Draft the floating-point geography article        </text>
+<text x="1088.7" y="215.0" fill="#e5c07b" xml:space="preserve">49m    </text>
+<text x="18.0" y="234.0" fill="#6b7387" xml:space="preserve">────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────</text>
+<text x="18.0" y="253.0" fill="#6b7387" xml:space="preserve">cwd       </text>
+<text x="98.5" y="253.0" fill="#61afef" xml:space="preserve">~/projects/cavalry</text>
+<text x="18.0" y="272.0" fill="#6b7387" xml:space="preserve">session   00000000-1d03-4f54-bbc6-bc56b953c37f   pid 1   v2.1.219</text>
+<text x="18.0" y="291.0" fill="#6b7387" xml:space="preserve">uptime    </text>
+<text x="98.5" y="291.0" fill="#c5cad3" xml:space="preserve">36m</text>
+<text x="122.7" y="291.0" fill="#6b7387" xml:space="preserve">   last wrote 1s ago   interactive   cli</text>
+<text x="18.0" y="310.0" fill="#6b7387" xml:space="preserve">prompt    </text>
+<text x="98.5" y="310.0" fill="#c5cad3" xml:space="preserve">Add bool variables to the Hoare logic frontend                                                                                    </text>
+<text x="18.0" y="386.0" fill="#6b7387" xml:space="preserve"> j/k move   r refresh   q quit</text>
+</svg>

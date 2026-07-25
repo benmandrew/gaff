@@ -127,7 +127,11 @@ impl App {
         let mut agents = Vec::with_capacity(sessions.len());
         let mut live_transcripts = Vec::with_capacity(sessions.len());
 
-        for session in sessions {
+        for mut session in sessions {
+            // Canonicalise once, so `cwd`, the project root and the worktree
+            // parent are all directly comparable regardless of symlinks.
+            session.cwd = git::canonical(&session.cwd);
+
             let transcript = registry::find_transcript(&session.session_id);
             let info = match &transcript {
                 Some(p) => {

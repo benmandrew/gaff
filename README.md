@@ -1,19 +1,10 @@
 # gaff
 
+<img src="doc/screenshot.svg" alt="gaff showing five agents across three projects, one waiting for input and one in a worktree" width="100%">
+
 gaff is a terminal user interface (TUI) listing every running Claude Code agent, grouped by the project it belongs to.
 
 Running several agents at once makes it easy to lose track of which one is working, which one is blocked, and which directory each is in. gaff reads the command-line interface (CLI)'s own on-disk state and renders it as a single table.
-
-```
- gaff   3 agents in 3 projects  3 busy
- NAME             STATUS    WHERE                 BRANCH                   DOING                                     FOR
- chezmoi                    ~/.local/share/chezmoi
-   chezmoi-82     busy      —                     main                     Sync Claude cwd to terminal tabs          2m
- gaff                       ~/projects/gaff
-▌  gaff-b6        busy      —                     main                     Build TUI for managing agents             10m
- site                       ~/projects/writing/site
-   site-db        busy      ⑂ centred-tables      worktree-centred-tables  Center tables and handle overflow         38s
-```
 
 ## Where the data comes from
 
@@ -54,7 +45,7 @@ Refreshes are driven by filesystem events on the registry directory and on the p
 
 ```
 cargo build --release    # 608,624 bytes at target/release/gaff
-cargo test               # 9 tests
+cargo test               # 10 tests
 ```
 
 The release profile trades speed for size — `opt-level = "z"`, fat link-time optimisation (LTO), one codegen unit, and `panic = "abort"` — which is the right trade when the work is a few file reads per second. That takes the binary from 1,054,048 bytes to 608,624.

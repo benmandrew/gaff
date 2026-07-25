@@ -38,7 +38,18 @@ pub fn main_repo_root(path: &Path) -> Option<PathBuf> {
     let idx = comps.iter().position(|c| c.as_os_str() == ".git")?;
     let main: PathBuf = comps[..idx].iter().collect();
     // A relative gitdir would resolve to nonsense; keep the worktree in that case.
-    if main.is_absolute() { Some(main) } else { Some(root) }
+    if !main.is_absolute() {
+        return Some(root);
+    }
+    // git records the gitdir fully resolved, so a project reached through a
+    // symlink would otherwise never match its own worktree's parent.
+    Some(canonical(&main))
+}
+
+/// Resolve symlinks, falling back to the path as given when that is not possible
+/// (a directory that has since been removed, say).
+pub fn canonical(path: &Path) -> PathBuf {
+    path.canonicalize().unwrap_or_else(|_| path.to_path_buf())
 }
 
 /// Current branch for the repo containing `path`, or `None` on detached HEAD.
@@ -99,6 +110,32 @@ mod tests {
 
         assert_eq!(branch(&repo).as_deref(), Some("main"));
         assert_eq!(branch(&wt).as_deref(), Some("feature"), "worktree reports its own branch");
+    }
+
+    /// git records a worktree's gitdir fully resolved. If resolution handed back
+    /// anything else, a project reached through a symlink would never match its
+    /// own worktree's parent and the two would render as separate groups.
+    #[test]
+    fn resolution_returns_canonical_paths() {
+        // tempdir() sits under /var on macOS, itself a symlink to /private/var,
+        // so the raw path genuinely differs from the resolved one.
+        let tmp = tempfile::tempdir().unwrap();
+        let repo_raw = tmp.path().join("repo");
+        fs::create_dir(&repo_raw).unwrap();
+
+        git(&repo_raw, &["init", "-q", "-b", "main"]);
+        git(&repo_raw, &["config", "user.email", "t@example.com"]);
+        git(&repo_raw, &["config", "user.name", "t"]);
+        fs::write(repo_raw.join("f"), "x").unwrap();
+        git(&repo_raw, &["add", "."]);
+        git(&repo_raw, &["commit", "-qm", "init"]);
+
+        let wt_raw = tmp.path().join("wt");
+        git(&repo_raw, &["worktree", "add", "-q", "-b", "feature", wt_raw.to_str().unwrap()]);
+
+        let got = main_repo_root(&wt_raw).expect("worktree resolves");
+        assert_eq!(got, canonical(&repo_raw), "worktree resolves to its parent");
+        assert_eq!(got, canonical(&got), "and the result is already canonical");
     }
 
     #[test]

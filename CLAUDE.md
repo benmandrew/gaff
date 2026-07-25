@@ -56,6 +56,25 @@ what it shows and why.
   codegen unit, `panic = "abort"`): 608,624 bytes vs 1,054,048 at `opt-level = 2`.
   The workload is a few file reads per second, so speed is not the constraint.
 
+## The README screenshot
+
+`doc/screenshot.svg` is generated, never hand-edited:
+
+```
+cargo build --release && uv run --with pyte doc/screenshot.py
+```
+
+`doc/screenshot.py` builds a throwaway `CLAUDE_CONFIG_DIR` plus real git repos
+(including a real linked worktree), runs the actual binary in a pty and renders
+the resulting screen. Only the fixture is invented, so the image cannot drift
+from what the tool renders. Regenerate it whenever the layout or palette changes.
+
+SVG rather than PNG because it stays sharp and diffs as text. Colours are
+presentation attributes, not CSS — GitHub sanitises `<style>` out of SVGs — and
+each colour run carries an explicit `x`, so alignment does not depend on the
+viewer's monospace font. Note that text in an `<img>`-embedded SVG is not
+selectable; that is a browser limitation, not something to fix here.
+
 ## Testing
 
 `cargo test`. The follower tests cover append, supersede, partial trailing line,

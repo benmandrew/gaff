@@ -122,8 +122,10 @@ pub fn find_transcript(session_id: &str) -> Option<PathBuf> {
 pub fn tildify(path: &Path) -> String {
     let s = path.to_string_lossy();
     if let Some(home) = std::env::var_os("HOME") {
-        let home = home.to_string_lossy().to_string();
-        if let Some(rest) = s.strip_prefix(&home) {
+        // Paths are canonicalised before they reach here, so `$HOME` has to be
+        // resolved the same way or a symlinked home would never match.
+        let home = crate::git::canonical(Path::new(&home));
+        if let Some(rest) = s.strip_prefix(&*home.to_string_lossy()) {
             return format!("~{rest}");
         }
     }
