@@ -277,3 +277,118 @@ fn draw_footer(f: &mut Frame, area: Rect, err: Option<&str>) {
     };
     f.render_widget(Paragraph::new(line), area);
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn h(secs: u64) -> String {
+        humanize(Duration::from_secs(secs))
+    }
+
+    /// The `FOR` column is seven cells wide and is the number the list is read
+    /// for. Each arm boundary is a place where the unit flips, so an off-by-one
+    /// here shows a waiting agent as "0s" when it has been blocked a minute.
+    #[test]
+    fn humanize_switches_unit_at_each_boundary() {
+        assert_eq!(h(0), "0s");
+        assert_eq!(h(59), "59s");
+        assert_eq!(h(60), "1m");
+        assert_eq!(h(3599), "59m");
+        assert_eq!(h(3600), "1h");
+        assert_eq!(h(86399), "23h59m");
+        assert_eq!(h(86400), "1d");
+    }
+
+    /// Whole hours drop the minutes so the common case stays short; anything
+    /// else keeps them, because "2h" for two hours and fifty minutes is a lie
+    /// the user acts on.
+    #[test]
+    fn humanize_keeps_minutes_only_when_they_are_nonzero() {
+        assert_eq!(h(7200), "2h");
+        assert_eq!(h(3660), "1h1m");
+        assert_eq!(h(9000), "2h30m");
+    }
+
+    /// Past a day the count keeps growing rather than saturating — a session
+    /// left up for a week should say so.
+    #[test]
+    fn humanize_counts_whole_days_beyond_the_first() {
+        assert_eq!(h(90_000), "1d");
+        assert_eq!(h(7 * 86400 + 3600), "7d");
+    }
+
+    /// Columns are fixed-width, so a cell wider than its budget pushes every
+    /// column to its right out of alignment for the whole table.
+    #[test]
+    fn truncate_never_exceeds_its_width() {
+        assert_eq!(truncate("short", 10), "short");
+        assert_eq!(truncate("exactly-10", 10), "exactly-10", "a string at the limit is left alone");
+        assert_eq!(truncate("abcdefghij", 5), "abcd…");
+        assert_eq!(truncate("abcdefghij", 5).chars().count(), 5);
+    }
+
+    /// Truncation counts characters, not bytes: the tool renders `⑂` and `…`,
+    /// and a byte-based slice would both mis-size the cell and panic on a
+    /// boundary split.
+    #[test]
+    fn truncate_is_char_based_not_byte_based() {
+        let s = "⑂ centred-tables";
+        assert!(s.len() > s.chars().count(), "the fixture really is multi-byte");
+        let got = truncate(s, 8);
+        assert_eq!(got.chars().count(), 8);
+        assert!(got.starts_with("⑂ "));
+    }
+
+    /// A one-cell column still has to render something; taking `width - 1`
+    /// characters would underflow.
+    #[test]
+    fn truncate_degrades_to_an_ellipsis_in_a_tiny_column() {
+        assert_eq!(truncate("abcdefghij", 1), "…");
+        assert_eq!(truncate("abcdefghij", 0), "…");
+    }
+
+    /// Paths are elided from the left because the tail names the thing: two
+    /// worktrees of the same repo differ only in their last component.
+    #[test]
+    fn shorten_path_keeps_the_tail() {
+        assert_eq!(shorten_path("~/projects/gaff", 20), "~/projects/gaff");
+        let got = shorten_path("~/projects/writing/site/.claude/worktrees/centred", 12);
+        assert_eq!(got.chars().count(), 12);
+        assert!(got.starts_with('…'), "elision is marked at the start");
+        assert!(got.ends_with("centred"), "the identifying tail survives");
+    }
+
+    /// Same char-vs-byte hazard as `truncate`, and here the slice is an index
+    /// arithmetic on a `Vec<char>`, so getting it wrong panics rather than
+    /// merely mis-renders.
+    #[test]
+    fn shorten_path_is_char_based_and_survives_a_tiny_column() {
+        let s = "~/projects/⑂ centré";
+        assert!(s.len() > s.chars().count(), "the fixture really is multi-byte");
+        assert_eq!(shorten_path(s, 7).chars().count(), 7);
+        assert_eq!(shorten_path(s, 7), "…centré");
+        assert_eq!(shorten_path(s, 1), "…");
+        assert_eq!(shorten_path(s, 0), "…");
+    }
+
+    /// The status set belongs to Claude Code and may grow. A value we have
+    /// never seen must still render — in grey, visibly present — rather than
+    /// being dropped or panicking the whole table.
+    #[test]
+    fn unknown_status_still_gets_a_visible_style() {
+        let unknown = status_style("teleporting");
+        assert_eq!(unknown.fg, Some(Color::Gray));
+        assert_ne!(unknown, status_style("waiting"), "and is not mistaken for one we know");
+        assert_eq!(status_style("unknown"), unknown, "including the registry's own fallback");
+    }
+
+    /// The two statuses worth interrupting for must not blend into the rest.
+    #[test]
+    fn waiting_and_error_are_styled_distinctly() {
+        assert_eq!(status_style("waiting").fg, Some(Color::Green));
+        assert_eq!(status_style("error").fg, Some(Color::Red));
+        assert_eq!(status_style("busy"), status_style("running"));
+        assert_eq!(status_style("idle"), status_style("ready"));
+    }
+}
