@@ -2,60 +2,7 @@
 
 <img src="doc/screenshot.svg" alt="gaff showing five agents across three projects, one waiting for input and one in a worktree" width="100%">
 
-gaff is a terminal user interface (TUI) listing every running Claude Code agent, grouped by the project it belongs to.
-
-Running several agents at once makes it easy to lose track of which one is working, which one is blocked, and which directory each is in. gaff reads the command-line interface (CLI)'s own on-disk state and renders it as a single table.
-
-## Where the data comes from
-
-Two locations, both internal to Claude Code and both undocumented:
-
-- `~/.claude/sessions/<pid>.json` — one file per live process, holding its working directory, a derived name, a status, and a version. This is the *registry*.
-- `~/.claude/projects/<slug>/<session-id>.jsonl` — the session *transcript*. Records of type `ai-title` carry a model-generated one-line summary of the work, which is what fills the `DOING` column.
-
-Registry files are removed on graceful exit only, so a hard-killed agent leaves one behind. gaff verifies each process identifier (PID) with `kill(pid, 0)` and drops entries whose process is gone.
-
-## Worktrees
-
-The claude process genuinely `chdir`s when it relocates into a *worktree*, and the registry mirrors that faithfully. Comparing the registry against `lsof -a -p <pid> -d cwd` on three live agents gives an exact match, including one sitting in `~/projects/writing/site/.claude/worktrees/centred-tables`. The transcript also moves to a worktree-named project directory, and a `worktree-state` record preserves `originalCwd` and `originalBranch`.
-
-That makes `cwd` authoritative, which is worth stating because the obvious guess is the opposite — that an agent launched in one directory and told to work in a worktree keeps reporting the directory it started in.
-
-What `cwd` cannot answer is which project a worktree belongs to, so grouping resolves it through git. A linked worktree's `.git` is a file reading `gitdir: /main/repo/.git/worktrees/<name>`, and everything before the `.git` component is the repo it was cut from. One code path covers every way an agent reaches a worktree.
-
-## Reading the columns
-
-`STATUS` is the CLI's own value — `busy`, `idle`, `ready`, `waiting`, `running` or `error`. Unrecognised values render in grey rather than being hidden, since the set belongs to Claude Code and may grow.
-
-`FOR` is time held in the current status, taken from `statusUpdatedAt`. For a `waiting` agent that is exactly how long it has been blocked on you, which is why waiting agents sort first within their project.
-
-Projects themselves sort alphabetically rather than by urgency. A group that jumps position whenever one of its agents changes status is harder to find than one that stays put.
-
-`WHERE` is position within the project: `⑂ name` for a worktree, a relative path for a subdirectory, `—` at the project root.
-
-## Performance
-
-The transcript corpus reaches hundreds of megabytes — 553 MB across 31 project directories on the development machine — and a single transcript can exceed 3.7 MB. Re-reading on every change is not viable, so two things keep it cheap.
-
-On first sight of a transcript, gaff seeks to the last 512 KiB. The records it wants are rewritten throughout a session rather than written once, so the tail carries a current copy; a full scan happens only if the tail yields nothing. Afterwards it reads only bytes appended since the last offset, and prefilters lines by substring before paying for a JSON parse.
-
-Refreshes are driven by filesystem events on the registry directory and on the project directories of live transcripts, debounced at 150 ms. A separate one-second tick redraws relative times without touching disk.
-
-## Building
-
-```
-cargo build --release
-cargo test
-```
-
-Continuous integration (CI) checks formatting, runs clippy with `-D warnings`,
-builds in debug and runs the tests. The same formatting and lint pair is
-available as a *pre-commit hook*, which each clone enables once — git does not
-clone hooks:
-
-```
-git config core.hooksPath .githooks
-```
+gaff is a terminal user interface (TUI) listing every running Claude Code agent, grouped by the project it belongs to. Running several at once makes it easy to lose track of which one is working, which one is blocked, and where each one is; gaff reads the command-line interface (CLI)'s own on-disk state and renders it as a single table.
 
 ## Usage
 
@@ -66,6 +13,30 @@ gaff --once     # print the table and exit
 
 Keys: `j`/`k` or arrows to move, `g`/`G` for first and last, `r` to force a refresh, `q` to quit. Project headings are skipped when moving.
 
-## Caveats
+## The columns
+
+- `STATUS` — the CLI's own value: `busy`, `idle`, `ready`, `waiting`, `running` or `error`. Unrecognised values render in grey rather than being hidden, since the set belongs to Claude Code and may grow.
+- `FOR` — how long the agent has held that status. For a `waiting` agent that is how long it has been blocked on you, which is why waiting agents sort first within their project.
+- `WHERE` — position within the project: `⑂ name` for a *worktree*, a relative path for a subdirectory, `—` at the project root.
+- `DOING` — a model-generated one-line summary of the work, read from the session transcript.
+
+Projects sort alphabetically rather than by urgency, because a group that jumps position whenever one of its agents changes status is harder to find than one that stays put.
+
+## Building
+
+```
+cargo build --release
+cargo test
+```
+
+Continuous integration (CI) checks formatting, runs clippy with `-D warnings`, builds in debug and runs the tests. The same formatting and lint pair is available as a *pre-commit hook*, which each clone enables once — git does not clone hooks:
+
+```
+git config core.hooksPath .githooks
+```
+
+## Where the data comes from
+
+Two locations, both internal to Claude Code and both undocumented: `~/.claude/sessions/<pid>.json`, one file per live process, and `~/.claude/projects/<slug>/<session-id>.jsonl`, the session transcript. Registry files are removed on graceful exit only, so gaff verifies each process identifier (PID) with `kill(pid, 0)` and drops entries whose process is gone. The transcript corpus reaches hundreds of megabytes, so transcripts are followed incrementally rather than re-read.
 
 Every field beyond `pid` and `sessionId` is parsed as optional, so a schema change degrades the display rather than breaking the tool. That is the most that can be promised: this reads private state belonging to another program, and nothing obliges that program to keep its shape. The version each agent reports is shown in the detail pane, which is the first place to look when a column goes empty.

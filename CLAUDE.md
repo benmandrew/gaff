@@ -13,7 +13,14 @@ what it shows and why.
 - **Never write to `~/.claude`.** gaff is strictly read-only over that tree.
 - **The transcript corpus is huge** (~550 MB, individual files >3 MB). Any new
   transcript reading must stay incremental — see `transcript.rs`. Do not add a
-  code path that parses a whole transcript per refresh.
+  code path that parses a whole transcript per refresh. Concretely: first sight
+  of a transcript seeks to the last 512 KiB, and a full scan happens only when
+  that tail yields nothing (the records wanted are rewritten through a session,
+  so the tail carries a current copy); afterwards only bytes appended since the
+  last offset are read, prefiltered by substring before a JSON parse. Refreshes
+  are driven by fs events on the registry directory and on live transcripts'
+  project directories, debounced at 150 ms, with a separate one-second tick that
+  redraws relative times without touching disk.
 
 ## Layout
 
