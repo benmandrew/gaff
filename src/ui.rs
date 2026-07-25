@@ -14,7 +14,9 @@ use std::time::Duration;
 fn status_style(status: &str) -> Style {
     match status {
         // Blocked on you: the whole reason to keep this open.
-        "waiting" => Style::default().fg(Color::Green).add_modifier(Modifier::BOLD),
+        "waiting" => Style::default()
+            .fg(Color::Green)
+            .add_modifier(Modifier::BOLD),
         "error" => Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
         "busy" | "running" => Style::default().fg(Color::Yellow),
         "idle" | "ready" => Style::default().fg(Color::DarkGray),
@@ -30,7 +32,11 @@ pub fn humanize(d: Duration) -> String {
         60..=3599 => format!("{}m", secs / 60),
         3600..=86399 => {
             let (h, m) = (secs / 3600, (secs % 3600) / 60);
-            if m == 0 { format!("{h}h") } else { format!("{h}h{m}m") }
+            if m == 0 {
+                format!("{h}h")
+            } else {
+                format!("{h}h{m}m")
+            }
         }
         _ => format!("{}d", secs / 86400),
     }
@@ -89,15 +95,28 @@ pub fn draw(f: &mut Frame, app: &App, state: &mut TableState, err: Option<&str>)
 
 fn draw_header(f: &mut Frame, area: Rect, app: &App) {
     let agents = &app.agents;
-    let waiting = agents.iter().filter(|a| a.session.status_str() == "waiting").count();
+    let waiting = agents
+        .iter()
+        .filter(|a| a.session.status_str() == "waiting")
+        .count();
     let busy = agents
         .iter()
         .filter(|a| matches!(a.session.status_str(), "busy" | "running"))
         .count();
-    let projects = app.rows.iter().filter(|r| matches!(r, DisplayRow::Project { .. })).count();
+    let projects = app
+        .rows
+        .iter()
+        .filter(|r| matches!(r, DisplayRow::Project { .. }))
+        .count();
 
     let mut spans = vec![
-        Span::styled(" gaff ", Style::default().fg(Color::Black).bg(Color::Cyan).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            " gaff ",
+            Style::default()
+                .fg(Color::Black)
+                .bg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::raw(format!(
             "  {} agent{} in {} project{}",
             agents.len(),
@@ -110,7 +129,10 @@ fn draw_header(f: &mut Frame, area: Rect, app: &App) {
         spans.push(Span::styled(format!("  {busy} busy"), status_style("busy")));
     }
     if waiting > 0 {
-        spans.push(Span::styled(format!("  {waiting} waiting"), status_style("waiting")));
+        spans.push(Span::styled(
+            format!("  {waiting} waiting"),
+            status_style("waiting"),
+        ));
     }
     f.render_widget(Paragraph::new(Line::from(spans)), area);
 }
@@ -130,8 +152,11 @@ fn draw_table(f: &mut Frame, area: Rect, app: &App, state: &mut TableState) {
     let loc_w = (flexible * 2 / 5).clamp(10, 32);
     let sum_w = flexible.saturating_sub(loc_w).max(10);
 
-    let header = Row::new(vec!["NAME", "STATUS", "WHERE", "BRANCH", "DOING", "FOR"])
-        .style(Style::default().fg(Color::DarkGray).add_modifier(Modifier::BOLD));
+    let header = Row::new(vec!["NAME", "STATUS", "WHERE", "BRANCH", "DOING", "FOR"]).style(
+        Style::default()
+            .fg(Color::DarkGray)
+            .add_modifier(Modifier::BOLD),
+    );
 
     let rows: Vec<Row> = app
         .rows
@@ -144,11 +169,17 @@ fn draw_table(f: &mut Frame, area: Rect, app: &App, state: &mut TableState) {
                     Cell::from(Line::from(vec![
                         Span::styled(
                             truncate(name, 15),
-                            Style::default().fg(Color::White).add_modifier(Modifier::BOLD),
+                            Style::default()
+                                .fg(Color::White)
+                                .add_modifier(Modifier::BOLD),
                         ),
                         // A count is only worth the ink when there is more than one.
                         Span::styled(
-                            if *count > 1 { format!(" ×{count}") } else { String::new() },
+                            if *count > 1 {
+                                format!(" ×{count}")
+                            } else {
+                                String::new()
+                            },
                             Style::default().fg(Color::DarkGray),
                         ),
                     ])),
@@ -176,8 +207,13 @@ fn draw_table(f: &mut Frame, area: Rect, app: &App, state: &mut TableState) {
                     Cell::from(format!("  {}", truncate(a.session.display_name(), 14)))
                         .style(Style::default().add_modifier(Modifier::BOLD)),
                     Cell::from(truncate(status, 9)).style(status_style(status)),
-                    Cell::from(shorten_path(&a.location(), loc_w))
-                        .style(Style::default().fg(if a.is_worktree() { Color::Magenta } else { Color::Blue })),
+                    Cell::from(shorten_path(&a.location(), loc_w)).style(Style::default().fg(
+                        if a.is_worktree() {
+                            Color::Magenta
+                        } else {
+                            Color::Blue
+                        },
+                    )),
                     Cell::from(truncate(a.branch.as_deref().unwrap_or("—"), 22))
                         .style(Style::default().fg(Color::Cyan)),
                     Cell::from(truncate(&summary, sum_w)),
@@ -199,14 +235,20 @@ fn draw_table(f: &mut Frame, area: Rect, app: &App, state: &mut TableState) {
         ],
     )
     .header(header)
-    .row_highlight_style(Style::default().bg(Color::Rgb(40, 44, 60)).add_modifier(Modifier::BOLD))
+    .row_highlight_style(
+        Style::default()
+            .bg(Color::Rgb(40, 44, 60))
+            .add_modifier(Modifier::BOLD),
+    )
     .highlight_symbol("▌");
 
     f.render_stateful_widget(table, area, state);
 }
 
 fn draw_detail(f: &mut Frame, area: Rect, app: &App, state: &TableState) {
-    let block = Block::default().borders(Borders::TOP).border_style(Style::default().fg(Color::DarkGray));
+    let block = Block::default()
+        .borders(Borders::TOP)
+        .border_style(Style::default().fg(Color::DarkGray));
 
     let Some(agent) = state.selected().and_then(|i| app.agent_at(i)) else {
         f.render_widget(block, area);
@@ -216,7 +258,10 @@ fn draw_detail(f: &mut Frame, area: Rect, app: &App, state: &TableState) {
     let label = |s: &str| Span::styled(format!("{s:<10}"), Style::default().fg(Color::DarkGray));
     let mut lines = vec![Line::from(vec![
         label("cwd"),
-        Span::styled(registry::tildify(&agent.session.cwd), Style::default().fg(Color::Blue)),
+        Span::styled(
+            registry::tildify(&agent.session.cwd),
+            Style::default().fg(Color::Blue),
+        ),
     ])];
 
     // Worktree lineage: where it came from, and what it branched off.
@@ -226,10 +271,7 @@ fn draw_detail(f: &mut Frame, area: Rect, app: &App, state: &TableState) {
                 label("launched"),
                 Span::styled(registry::tildify(orig), Style::default().fg(Color::Magenta)),
                 Span::styled(
-                    format!(
-                        "  (off {})",
-                        wt.original_branch.as_deref().unwrap_or("?")
-                    ),
+                    format!("  (off {})", wt.original_branch.as_deref().unwrap_or("?")),
                     Style::default().fg(Color::DarkGray),
                 ),
             ]));
@@ -238,9 +280,16 @@ fn draw_detail(f: &mut Frame, area: Rect, app: &App, state: &TableState) {
 
     lines.push(Line::from(vec![
         label("session"),
-        Span::styled(agent.session.session_id.clone(), Style::default().fg(Color::DarkGray)),
         Span::styled(
-            format!("   pid {}   v{}", agent.session.pid, agent.session.version.as_deref().unwrap_or("?")),
+            agent.session.session_id.clone(),
+            Style::default().fg(Color::DarkGray),
+        ),
+        Span::styled(
+            format!(
+                "   pid {}   v{}",
+                agent.session.pid,
+                agent.session.version.as_deref().unwrap_or("?")
+            ),
             Style::default().fg(Color::DarkGray),
         ),
     ]));
@@ -264,12 +313,18 @@ fn draw_detail(f: &mut Frame, area: Rect, app: &App, state: &TableState) {
         lines.push(Line::from(vec![label("prompt"), Span::raw(prompt.clone())]));
     }
 
-    f.render_widget(Paragraph::new(lines).block(block).wrap(Wrap { trim: true }), area);
+    f.render_widget(
+        Paragraph::new(lines).block(block).wrap(Wrap { trim: true }),
+        area,
+    );
 }
 
 fn draw_footer(f: &mut Frame, area: Rect, err: Option<&str>) {
     let line = match err {
-        Some(e) => Line::from(Span::styled(format!(" {e}"), Style::default().fg(Color::Red))),
+        Some(e) => Line::from(Span::styled(
+            format!(" {e}"),
+            Style::default().fg(Color::Red),
+        )),
         None => Line::from(Span::styled(
             " j/k move   r refresh   q quit",
             Style::default().fg(Color::DarkGray),
@@ -323,7 +378,11 @@ mod tests {
     #[test]
     fn truncate_never_exceeds_its_width() {
         assert_eq!(truncate("short", 10), "short");
-        assert_eq!(truncate("exactly-10", 10), "exactly-10", "a string at the limit is left alone");
+        assert_eq!(
+            truncate("exactly-10", 10),
+            "exactly-10",
+            "a string at the limit is left alone"
+        );
         assert_eq!(truncate("abcdefghij", 5), "abcd…");
         assert_eq!(truncate("abcdefghij", 5).chars().count(), 5);
     }
@@ -334,7 +393,10 @@ mod tests {
     #[test]
     fn truncate_is_char_based_not_byte_based() {
         let s = "⑂ centred-tables";
-        assert!(s.len() > s.chars().count(), "the fixture really is multi-byte");
+        assert!(
+            s.len() > s.chars().count(),
+            "the fixture really is multi-byte"
+        );
         let got = truncate(s, 8);
         assert_eq!(got.chars().count(), 8);
         assert!(got.starts_with("⑂ "));
@@ -365,7 +427,10 @@ mod tests {
     #[test]
     fn shorten_path_is_char_based_and_survives_a_tiny_column() {
         let s = "~/projects/⑂ centré";
-        assert!(s.len() > s.chars().count(), "the fixture really is multi-byte");
+        assert!(
+            s.len() > s.chars().count(),
+            "the fixture really is multi-byte"
+        );
         assert_eq!(shorten_path(s, 7).chars().count(), 7);
         assert_eq!(shorten_path(s, 7), "…centré");
         assert_eq!(shorten_path(s, 1), "…");
@@ -379,8 +444,16 @@ mod tests {
     fn unknown_status_still_gets_a_visible_style() {
         let unknown = status_style("teleporting");
         assert_eq!(unknown.fg, Some(Color::Gray));
-        assert_ne!(unknown, status_style("waiting"), "and is not mistaken for one we know");
-        assert_eq!(status_style("unknown"), unknown, "including the registry's own fallback");
+        assert_ne!(
+            unknown,
+            status_style("waiting"),
+            "and is not mistaken for one we know"
+        );
+        assert_eq!(
+            status_style("unknown"),
+            unknown,
+            "including the registry's own fallback"
+        );
     }
 
     /// The two statuses worth interrupting for must not blend into the rest.

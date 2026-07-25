@@ -57,7 +57,9 @@ pub fn claude_home() -> PathBuf {
     match std::env::var_os("CLAUDE_CONFIG_DIR") {
         Some(d) => PathBuf::from(d),
         None => {
-            let home = std::env::var_os("HOME").map(PathBuf::from).unwrap_or_default();
+            let home = std::env::var_os("HOME")
+                .map(PathBuf::from)
+                .unwrap_or_default();
             home.join(".claude")
         }
     }
@@ -103,8 +105,12 @@ pub fn load() -> Result<Vec<Session>> {
         }
         // A session writing its file as we read it yields a partial parse;
         // skipping is correct, the next refresh picks it up.
-        let Ok(text) = fs::read_to_string(&path) else { continue };
-        let Ok(session) = serde_json::from_str::<Session>(&text) else { continue };
+        let Ok(text) = fs::read_to_string(&path) else {
+            continue;
+        };
+        let Ok(session) = serde_json::from_str::<Session>(&text) else {
+            continue;
+        };
         if pid_alive(session.pid) {
             out.push(session);
         }
@@ -249,14 +255,22 @@ mod tests {
     /// not exist. Written to hold whatever `$HOME` happens to be.
     #[test]
     fn paths_outside_home_are_left_alone() {
-        let Some(home) = std::env::var_os("HOME") else { return };
-        let home = crate::git::canonical(Path::new(&home)).to_string_lossy().into_owned();
+        let Some(home) = std::env::var_os("HOME") else {
+            return;
+        };
+        let home = crate::git::canonical(Path::new(&home))
+            .to_string_lossy()
+            .into_owned();
         if home.is_empty() {
             return;
         }
         // Two candidates, so one of them is guaranteed not to be a prefix of
         // this machine's home no matter where home lives.
-        let outside = if home.starts_with("/zz") { "/yy-not-home/x" } else { "/zz-not-home/x" };
+        let outside = if home.starts_with("/zz") {
+            "/yy-not-home/x"
+        } else {
+            "/zz-not-home/x"
+        };
         assert_eq!(tildify(Path::new(outside)), outside);
     }
 
@@ -264,7 +278,9 @@ mod tests {
     /// is the difference between a readable row and a truncated one.
     #[test]
     fn paths_under_home_are_shortened() {
-        let Some(home) = std::env::var_os("HOME") else { return };
+        let Some(home) = std::env::var_os("HOME") else {
+            return;
+        };
         // `tildify` canonicalises `$HOME` before comparing, so the fixture has
         // to be built from the canonical form or a symlinked home never matches.
         let home = crate::git::canonical(Path::new(&home));

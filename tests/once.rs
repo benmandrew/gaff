@@ -23,12 +23,27 @@ fn dead_processes_are_dropped_but_live_ones_are_kept() {
     let repo = fx.repo("alpha", "main");
 
     fx.add_session(&SessionSpec::new(A, &repo).name("alive").status("busy"));
-    fx.add_session(&SessionSpec::new(B, &repo).name("ghost").status("busy").pid(dead_pid()));
+    fx.add_session(
+        &SessionSpec::new(B, &repo)
+            .name("ghost")
+            .status("busy")
+            .pid(dead_pid()),
+    );
 
     let out = fx.run_once();
-    assert!(agent_row(&out, "alive").is_some(), "live session missing:\n{out}");
-    assert!(agent_row(&out, "ghost").is_none(), "stale session should be dropped:\n{out}");
-    assert_eq!(headings(&out), vec!["~/projects/alpha  (1)"], "count must exclude the ghost");
+    assert!(
+        agent_row(&out, "alive").is_some(),
+        "live session missing:\n{out}"
+    );
+    assert!(
+        agent_row(&out, "ghost").is_none(),
+        "stale session should be dropped:\n{out}"
+    );
+    assert_eq!(
+        headings(&out),
+        vec!["~/projects/alpha  (1)"],
+        "count must exclude the ghost"
+    );
 }
 
 /// The `DOING` column is the reason to keep gaff open at all: it is the only
@@ -38,11 +53,23 @@ fn ai_title_from_the_transcript_reaches_the_output() {
     let fx = Fixture::new();
     let repo = fx.repo("alpha", "main");
     fx.add_session(&SessionSpec::new(A, &repo).name("worker").status("busy"));
-    fx.add_transcript(&repo, A, &format!("{}{}", last_prompt("centre them"), ai_title("Centre the tables")));
+    fx.add_transcript(
+        &repo,
+        A,
+        &format!(
+            "{}{}",
+            last_prompt("centre them"),
+            ai_title("Centre the tables")
+        ),
+    );
 
     let out = fx.run_once();
     let row = agent_row(&out, "worker").expect("agent row");
-    assert_eq!(title_of(row), "Centre the tables", "title missing from row: {row:?}");
+    assert_eq!(
+        title_of(row),
+        "Centre the tables",
+        "title missing from row: {row:?}"
+    );
 }
 
 /// An agent that relocated into a worktree still belongs to the project it was
@@ -52,17 +79,33 @@ fn ai_title_from_the_transcript_reaches_the_output() {
 fn worktree_agent_groups_under_the_repo_it_was_cut_from() {
     let fx = Fixture::new();
     let repo = fx.repo("site", "main");
-    let wt = add_worktree(&repo, &repo.join(".claude/worktrees/centred-tables"), "wt-centred-tables");
+    let wt = add_worktree(
+        &repo,
+        &repo.join(".claude/worktrees/centred-tables"),
+        "wt-centred-tables",
+    );
 
     fx.add_session(&SessionSpec::new(A, &repo).name("at-root").status("busy"));
     fx.add_session(&SessionSpec::new(B, &wt).name("in-tree").status("busy"));
 
     let out = fx.run_once();
-    assert_eq!(headings(&out), vec!["~/projects/site  (2)"], "worktree must not head its own group");
+    assert_eq!(
+        headings(&out),
+        vec!["~/projects/site  (2)"],
+        "worktree must not head its own group"
+    );
 
     let row = agent_row(&out, "in-tree").expect("worktree agent row");
-    assert_eq!(where_of(row), "⑂ centred-tables", "worktree location: {row:?}");
-    assert_eq!(branch_of(row), "wt-centred-tables", "worktree branch: {row:?}");
+    assert_eq!(
+        where_of(row),
+        "⑂ centred-tables",
+        "worktree location: {row:?}"
+    );
+    assert_eq!(
+        branch_of(row),
+        "wt-centred-tables",
+        "worktree branch: {row:?}"
+    );
 }
 
 /// `WHERE` answers "which of this project's directories is this agent in?".
@@ -81,8 +124,16 @@ fn location_shows_position_within_the_project() {
     let out = fx.run_once();
     let root = agent_row(&out, "at-root").expect("root agent");
     let inner = agent_row(&out, "in-sub").expect("subdir agent");
-    assert_eq!(where_of(root), "—", "project root renders as a dash: {root:?}");
-    assert_eq!(where_of(inner), "crates/inner", "subdirectory renders relative: {inner:?}");
+    assert_eq!(
+        where_of(root),
+        "—",
+        "project root renders as a dash: {root:?}"
+    );
+    assert_eq!(
+        where_of(inner),
+        "crates/inner",
+        "subdirectory renders relative: {inner:?}"
+    );
 }
 
 /// One heading per project, carrying the number of agents under it. A second
@@ -112,13 +163,27 @@ fn projects_sort_alphabetically_and_urgency_only_orders_within_one() {
     // The waiting agent sits in the alphabetically *later* project, so if urgency
     // leaked into project order this would surface as zulu jumping ahead.
     fx.add_session(&SessionSpec::new(B, &zulu).name("z-busy").status("busy"));
-    fx.add_session(&SessionSpec::new(C, &zulu).name("z-waiting").status("waiting"));
+    fx.add_session(
+        &SessionSpec::new(C, &zulu)
+            .name("z-waiting")
+            .status("waiting"),
+    );
 
     let out = fx.run_once();
-    assert_eq!(headings(&out), vec!["~/projects/alpha  (1)", "~/projects/zulu  (2)"]);
+    assert_eq!(
+        headings(&out),
+        vec!["~/projects/alpha  (1)", "~/projects/zulu  (2)"]
+    );
 
-    let names: Vec<&str> = agent_rows(&out).iter().filter_map(|l| l.split_whitespace().next()).collect();
-    assert_eq!(names, vec!["a-busy", "z-waiting", "z-busy"], "waiting sorts first within its project");
+    let names: Vec<&str> = agent_rows(&out)
+        .iter()
+        .filter_map(|l| l.split_whitespace().next())
+        .collect();
+    assert_eq!(
+        names,
+        vec!["a-busy", "z-waiting", "z-busy"],
+        "waiting sorts first within its project"
+    );
 }
 
 /// This reads another program's private state, which may be mid-write or may
@@ -133,7 +198,10 @@ fn malformed_registry_file_does_not_hide_valid_sessions() {
     fx.add_session(&SessionSpec::new(A, &repo).name("survivor").status("busy"));
 
     let out = fx.run_once();
-    assert!(agent_row(&out, "survivor").is_some(), "valid session lost to a bad neighbour:\n{out}");
+    assert!(
+        agent_row(&out, "survivor").is_some(),
+        "valid session lost to a bad neighbour:\n{out}"
+    );
     assert_eq!(agent_rows(&out).len(), 1);
 }
 
@@ -149,7 +217,11 @@ fn session_missing_every_optional_field_still_lists() {
     let out = fx.run_once();
     // With no name, gaff falls back to the leading chunk of the session id.
     let row = agent_row(&out, &A[..8]).expect("row for a bare session");
-    assert_eq!(status_of(row), "unknown", "absent status falls back to `unknown`: {row:?}");
+    assert_eq!(
+        status_of(row),
+        "unknown",
+        "absent status falls back to `unknown`: {row:?}"
+    );
     assert_eq!(headings(&out), vec!["~/projects/alpha  (1)"]);
 }
 
@@ -186,7 +258,11 @@ fn malformed_transcript_lines_do_not_lose_valid_records() {
 
     let out = fx.run_once();
     let row = agent_row(&out, "worker").expect("agent row");
-    assert_eq!(title_of(row), "Survives the noise", "valid record lost: {row:?}");
+    assert_eq!(
+        title_of(row),
+        "Survives the noise",
+        "valid record lost: {row:?}"
+    );
 }
 
 /// Agents are routinely run outside a repository — a scratch directory, a home
@@ -202,7 +278,11 @@ fn agent_outside_a_git_repo_groups_under_its_own_directory() {
     let out = fx.run_once();
     assert_eq!(headings(&out), vec!["~/scratch  (1)"]);
     let row = agent_row(&out, "loose").expect("non-repo agent row");
-    assert_eq!(where_of(row), "—", "its own directory is the project root: {row:?}");
+    assert_eq!(
+        where_of(row),
+        "—",
+        "its own directory is the project root: {row:?}"
+    );
 }
 
 /// On a machine that has never run Claude Code there is no `sessions/` directory
@@ -210,11 +290,23 @@ fn agent_outside_a_git_repo_groups_under_its_own_directory() {
 #[test]
 fn absent_sessions_directory_is_a_clean_empty_run() {
     let fx = Fixture::bare();
-    let out = fx.command().arg("--once").output().expect("run gaff --once");
+    let out = fx
+        .command()
+        .arg("--once")
+        .output()
+        .expect("run gaff --once");
 
     assert!(out.status.success(), "exit status: {}", out.status);
-    assert!(out.stdout.is_empty(), "stdout: {:?}", String::from_utf8_lossy(&out.stdout));
-    assert!(out.stderr.is_empty(), "stderr: {:?}", String::from_utf8_lossy(&out.stderr));
+    assert!(
+        out.stdout.is_empty(),
+        "stdout: {:?}",
+        String::from_utf8_lossy(&out.stdout)
+    );
+    assert!(
+        out.stderr.is_empty(),
+        "stderr: {:?}",
+        String::from_utf8_lossy(&out.stderr)
+    );
 }
 
 /// gaff is strictly read-only over `~/.claude`. That tree is Claude Code's live
@@ -224,13 +316,21 @@ fn absent_sessions_directory_is_a_clean_empty_run() {
 fn running_gaff_writes_nothing_into_the_config_dir() {
     let fx = Fixture::new();
     let repo = fx.repo("alpha", "main");
-    fx.add_session(&SessionSpec::new(A, &repo).name("worker").status("busy").status_age_mins(3));
+    fx.add_session(
+        &SessionSpec::new(A, &repo)
+            .name("worker")
+            .status("busy")
+            .status_age_mins(3),
+    );
     fx.add_transcript(&repo, A, &ai_title("Leave no trace"));
     fx.write_registry_file("broken.json", "{oops");
 
     let before = snapshot(&fx.config);
     let out = fx.run_once();
-    assert!(agent_row(&out, "worker").is_some(), "fixture should produce a row:\n{out}");
+    assert!(
+        agent_row(&out, "worker").is_some(),
+        "fixture should produce a row:\n{out}"
+    );
 
     assert_eq!(before, snapshot(&fx.config), "gaff modified its input tree");
 }

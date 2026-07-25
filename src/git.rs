@@ -76,8 +76,16 @@ mod tests {
     use std::process::Command;
 
     fn git(dir: &Path, args: &[&str]) {
-        let out = Command::new("git").current_dir(dir).args(args).output().expect("run git");
-        assert!(out.status.success(), "git {args:?}: {}", String::from_utf8_lossy(&out.stderr));
+        let out = Command::new("git")
+            .current_dir(dir)
+            .args(args)
+            .output()
+            .expect("run git");
+        assert!(
+            out.status.success(),
+            "git {args:?}: {}",
+            String::from_utf8_lossy(&out.stderr)
+        );
     }
 
     /// A worktree must resolve back to the repo it was cut from — this is what
@@ -99,17 +107,39 @@ mod tests {
         git(&repo, &["commit", "-qm", "init"]);
 
         let wt = root.join("wt");
-        git(&repo, &["worktree", "add", "-q", "-b", "feature", wt.to_str().unwrap()]);
+        git(
+            &repo,
+            &[
+                "worktree",
+                "add",
+                "-q",
+                "-b",
+                "feature",
+                wt.to_str().unwrap(),
+            ],
+        );
 
-        assert_eq!(main_repo_root(&repo).unwrap(), repo, "plain repo resolves to itself");
-        assert_eq!(main_repo_root(&wt).unwrap(), repo, "worktree resolves to parent");
+        assert_eq!(
+            main_repo_root(&repo).unwrap(),
+            repo,
+            "plain repo resolves to itself"
+        );
+        assert_eq!(
+            main_repo_root(&wt).unwrap(),
+            repo,
+            "worktree resolves to parent"
+        );
         // A subdirectory of the worktree must resolve the same way.
         let sub = wt.join("sub");
         fs::create_dir(&sub).unwrap();
         assert_eq!(main_repo_root(&sub).unwrap(), repo);
 
         assert_eq!(branch(&repo).as_deref(), Some("main"));
-        assert_eq!(branch(&wt).as_deref(), Some("feature"), "worktree reports its own branch");
+        assert_eq!(
+            branch(&wt).as_deref(),
+            Some("feature"),
+            "worktree reports its own branch"
+        );
     }
 
     /// git records a worktree's gitdir fully resolved. If resolution handed back
@@ -131,7 +161,17 @@ mod tests {
         git(&repo_raw, &["commit", "-qm", "init"]);
 
         let wt_raw = tmp.path().join("wt");
-        git(&repo_raw, &["worktree", "add", "-q", "-b", "feature", wt_raw.to_str().unwrap()]);
+        git(
+            &repo_raw,
+            &[
+                "worktree",
+                "add",
+                "-q",
+                "-b",
+                "feature",
+                wt_raw.to_str().unwrap(),
+            ],
+        );
 
         let got = main_repo_root(&wt_raw).expect("worktree resolves");
         assert_eq!(got, canonical(&repo_raw), "worktree resolves to its parent");

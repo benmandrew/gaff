@@ -48,7 +48,13 @@ impl Fixture {
         let home = root.join("home");
         let config = home.join(".claude");
         fs::create_dir_all(&config).unwrap();
-        Fixture { _tmp: tmp, root, home, config, counter: Cell::new(0) }
+        Fixture {
+            _tmp: tmp,
+            root,
+            home,
+            config,
+            counter: Cell::new(0),
+        }
     }
 
     fn next_id(&self) -> u32 {
@@ -63,10 +69,10 @@ impl Fixture {
     }
 
     pub fn add_session(&self, spec: &SessionSpec) {
-        let path = self
-            .config
-            .join("sessions")
-            .join(format!("{}-{}.json", spec.pid, self.next_id()));
+        let path =
+            self.config
+                .join("sessions")
+                .join(format!("{}-{}.json", spec.pid, self.next_id()));
         fs::write(path, spec.to_json()).unwrap();
     }
 
@@ -88,7 +94,11 @@ impl Fixture {
 
     /// Run `gaff --once`, assert it succeeded, and hand back its stdout.
     pub fn run_once(&self) -> String {
-        let out = self.command().arg("--once").output().expect("run gaff --once");
+        let out = self
+            .command()
+            .arg("--once")
+            .output()
+            .expect("run gaff --once");
         assert!(
             out.status.success(),
             "gaff --once failed ({}): {}",
@@ -101,7 +111,8 @@ impl Fixture {
     /// A `Command` for the real binary, pointed at this fixture.
     pub fn command(&self) -> Command {
         let mut cmd = Command::new(env!("CARGO_BIN_EXE_gaff"));
-        cmd.env("CLAUDE_CONFIG_DIR", &self.config).env("HOME", &self.home);
+        cmd.env("CLAUDE_CONFIG_DIR", &self.config)
+            .env("HOME", &self.home);
         cmd
     }
 }
@@ -186,7 +197,10 @@ impl SessionSpec {
 }
 
 pub fn now_ms() -> i64 {
-    SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as i64
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_millis() as i64
 }
 
 /// A pid guaranteed to be alive: our own.
@@ -208,11 +222,17 @@ pub fn dead_pid() -> i32 {
 }
 
 pub fn ai_title(title: &str) -> String {
-    format!("{{\"type\":\"ai-title\",\"aiTitle\":{}}}\n", json_str(title))
+    format!(
+        "{{\"type\":\"ai-title\",\"aiTitle\":{}}}\n",
+        json_str(title)
+    )
 }
 
 pub fn last_prompt(prompt: &str) -> String {
-    format!("{{\"type\":\"last-prompt\",\"lastPrompt\":{}}}\n", json_str(prompt))
+    format!(
+        "{{\"type\":\"last-prompt\",\"lastPrompt\":{}}}\n",
+        json_str(prompt)
+    )
 }
 
 fn json_str(s: &str) -> String {
@@ -220,8 +240,16 @@ fn json_str(s: &str) -> String {
 }
 
 pub fn git(dir: &Path, args: &[&str]) {
-    let out = Command::new("git").current_dir(dir).args(args).output().expect("run git");
-    assert!(out.status.success(), "git {args:?}: {}", String::from_utf8_lossy(&out.stderr));
+    let out = Command::new("git")
+        .current_dir(dir)
+        .args(args)
+        .output()
+        .expect("run git");
+    assert!(
+        out.status.success(),
+        "git {args:?}: {}",
+        String::from_utf8_lossy(&out.stderr)
+    );
 }
 
 /// A real repository with one commit — grouping resolves through git, so a
@@ -240,13 +268,25 @@ pub fn init_repo(path: &Path, branch: &str) -> PathBuf {
 /// A real linked worktree, whose `.git` is a file pointing back at the parent.
 pub fn add_worktree(repo: &Path, path: &Path, branch: &str) -> PathBuf {
     fs::create_dir_all(path.parent().unwrap()).unwrap();
-    git(repo, &["worktree", "add", "-q", "-b", branch, path.to_str().unwrap()]);
+    git(
+        repo,
+        &[
+            "worktree",
+            "add",
+            "-q",
+            "-b",
+            branch,
+            path.to_str().unwrap(),
+        ],
+    );
     path.canonicalize().unwrap()
 }
 
 /// Project heading lines from `--once` output — the unindented ones.
 pub fn headings(out: &str) -> Vec<&str> {
-    out.lines().filter(|l| !l.is_empty() && !l.starts_with(' ')).collect()
+    out.lines()
+        .filter(|l| !l.is_empty() && !l.starts_with(' '))
+        .collect()
 }
 
 /// Agent row lines, in the order printed.
@@ -256,7 +296,9 @@ pub fn agent_rows(out: &str) -> Vec<&str> {
 
 /// The agent row whose NAME column is `name`.
 pub fn agent_row<'a>(out: &'a str, name: &str) -> Option<&'a str> {
-    agent_rows(out).into_iter().find(|l| l.split_whitespace().next() == Some(name))
+    agent_rows(out)
+        .into_iter()
+        .find(|l| l.split_whitespace().next() == Some(name))
 }
 
 // `print_once` lays each agent row out in fixed-width fields:

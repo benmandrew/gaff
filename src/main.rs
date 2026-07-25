@@ -16,7 +16,9 @@ mod ui;
 use anyhow::Result;
 use app::App;
 use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
-use crossterm::terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
+use crossterm::terminal::{
+    disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
+};
 use crossterm::ExecutableCommand;
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use ratatui::backend::CrosstermBackend;
@@ -121,7 +123,10 @@ fn run(
 
         if dirty && last_refresh.elapsed() >= DEBOUNCE {
             // Sorting can reorder rows under the cursor; keep the same agent selected.
-            let anchor = table.selected().and_then(|i| app.agent_at(i)).map(|a| a.session.session_id.clone());
+            let anchor = table
+                .selected()
+                .and_then(|i| app.agent_at(i))
+                .map(|a| a.session.session_id.clone());
 
             app.refresh();
             sync_watches(watcher, watched, app);
@@ -132,8 +137,12 @@ fn run(
                     .and_then(|id| app.row_of_session(id))
                     // The selected agent exited: fall back to the nearest row.
                     .or_else(|| {
-                        let near = table.selected().unwrap_or(0).min(app.rows.len().saturating_sub(1));
-                        app.seek_selectable(near, -1).or_else(|| app.first_selectable())
+                        let near = table
+                            .selected()
+                            .unwrap_or(0)
+                            .min(app.rows.len().saturating_sub(1));
+                        app.seek_selectable(near, -1)
+                            .or_else(|| app.first_selectable())
                     }),
             );
 

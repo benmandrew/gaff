@@ -53,7 +53,9 @@ impl Agent {
     /// Time since the transcript last grew — real work, as opposed to the
     /// registry heartbeat, which ticks whether or not anything is happening.
     pub fn idle_for(&self) -> Option<Duration> {
-        SystemTime::now().duration_since(self.info.last_activity?).ok()
+        SystemTime::now()
+            .duration_since(self.info.last_activity?)
+            .ok()
     }
 
     /// How long this agent has held its current status. For a `waiting` agent
@@ -94,7 +96,11 @@ impl Agent {
 
 /// A rendered line: either a project heading or one of its agents.
 pub enum DisplayRow {
-    Project { name: String, path: String, count: usize },
+    Project {
+        name: String,
+        path: String,
+        count: usize,
+    },
     Agent(usize),
 }
 
@@ -152,7 +158,13 @@ impl App {
                 .and_then(|w| w.worktree_branch.clone())
                 .or_else(|| git::branch(&session.cwd));
 
-            agents.push(Agent { session, info, branch, transcript, project });
+            agents.push(Agent {
+                session,
+                info,
+                branch,
+                transcript,
+                project,
+            });
         }
 
         self.transcripts.retain(&live_transcripts);
@@ -186,7 +198,10 @@ impl App {
                 rows.push(DisplayRow::Project {
                     name: agent.project_name(),
                     path: registry::tildify(&agent.project),
-                    count: order.iter().filter(|&&j| self.agents[j].project == agent.project).count(),
+                    count: order
+                        .iter()
+                        .filter(|&&j| self.agents[j].project == agent.project)
+                        .count(),
                 });
                 current = Some(&agent.project);
             }
@@ -228,7 +243,8 @@ impl App {
 
     pub fn row_of_session(&self, session_id: &str) -> Option<usize> {
         (0..self.rows.len()).find(|&r| {
-            self.agent_at(r).is_some_and(|a| a.session.session_id == session_id)
+            self.agent_at(r)
+                .is_some_and(|a| a.session.session_id == session_id)
         })
     }
 
@@ -255,7 +271,10 @@ mod tests {
     use std::process::Command;
 
     fn now_ms() -> i64 {
-        SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as i64
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as i64
     }
 
     /// An agent with just enough filled in to be sorted and rendered. Session
@@ -282,7 +301,10 @@ mod tests {
     }
 
     fn app_with(agents: Vec<Agent>) -> App {
-        let mut app = App { agents, ..Default::default() };
+        let mut app = App {
+            agents,
+            ..Default::default()
+        };
         app.rebuild_rows();
         app
     }
@@ -299,8 +321,16 @@ mod tests {
     }
 
     fn git(dir: &Path, args: &[&str]) {
-        let out = Command::new("git").current_dir(dir).args(args).output().expect("run git");
-        assert!(out.status.success(), "git {args:?}: {}", String::from_utf8_lossy(&out.stderr));
+        let out = Command::new("git")
+            .current_dir(dir)
+            .args(args)
+            .output()
+            .expect("run git");
+        assert!(
+            out.status.success(),
+            "git {args:?}: {}",
+            String::from_utf8_lossy(&out.stderr)
+        );
     }
 
     /// Ordering within a project exists so the agents that need you are the
@@ -315,7 +345,11 @@ mod tests {
         assert_eq!(agent("a", "ready", p).priority(), 2);
         assert_eq!(agent("a", "busy", p).priority(), 3);
         assert_eq!(agent("a", "running", p).priority(), 3);
-        assert_eq!(agent("a", "teleporting", p).priority(), 3, "an unknown status waits its turn");
+        assert_eq!(
+            agent("a", "teleporting", p).priority(),
+            3,
+            "an unknown status waits its turn"
+        );
 
         let mut unset = agent("a", "busy", p);
         unset.session.status = None;
@@ -378,7 +412,17 @@ mod tests {
         git(&repo, &["commit", "-qm", "init"]);
 
         let wt = root.join("centred-tables");
-        git(&repo, &["worktree", "add", "-q", "-b", "feature", wt.to_str().unwrap()]);
+        git(
+            &repo,
+            &[
+                "worktree",
+                "add",
+                "-q",
+                "-b",
+                "feature",
+                wt.to_str().unwrap(),
+            ],
+        );
 
         // The project stays the main repo — that is the grouping key.
         let mut a = agent("a", "busy", &repo);
@@ -392,8 +436,14 @@ mod tests {
     /// filesystem root) still has to produce a heading rather than an empty one.
     #[test]
     fn project_name_is_the_basename_with_a_path_fallback() {
-        assert_eq!(agent("a", "busy", Path::new("/home/me/projects/gaff")).project_name(), "gaff");
-        assert_eq!(agent("a", "busy", Path::new("/")).project_name(), registry::tildify(Path::new("/")));
+        assert_eq!(
+            agent("a", "busy", Path::new("/home/me/projects/gaff")).project_name(),
+            "gaff"
+        );
+        assert_eq!(
+            agent("a", "busy", Path::new("/")).project_name(),
+            registry::tildify(Path::new("/"))
+        );
     }
 
     /// `FOR` is time held in the current status. When the registry omits the
@@ -460,7 +510,10 @@ mod tests {
             agent("b", "busy", Path::new("/p/apple")),
             agent("c", "idle", Path::new("/p/Mango")),
         ]);
-        assert_eq!(layout(&app), ["# apple x1", "b", "# Mango x1", "c", "# Zebra x1", "a"]);
+        assert_eq!(
+            layout(&app),
+            ["# apple x1", "b", "# Mango x1", "c", "# Zebra x1", "a"]
+        );
     }
 
     /// Two checkouts named `site` under different parents are different
@@ -482,7 +535,11 @@ mod tests {
                 _ => None,
             })
             .collect();
-        assert_eq!(paths, ["/x/foo", "/y/foo"], "the headings are told apart by path");
+        assert_eq!(
+            paths,
+            ["/x/foo", "/y/foo"],
+            "the headings are told apart by path"
+        );
     }
 
     /// Within a project, urgency orders the rows and the name breaks ties, so
@@ -540,10 +597,22 @@ mod tests {
         ]);
         assert_eq!(app.first_selectable(), Some(1));
         assert_eq!(app.last_selectable(), Some(3));
-        assert_eq!(app.seek_selectable(2, 1), Some(3), "forwards past a heading");
-        assert_eq!(app.seek_selectable(2, -1), Some(1), "backwards past a heading");
+        assert_eq!(
+            app.seek_selectable(2, 1),
+            Some(3),
+            "forwards past a heading"
+        );
+        assert_eq!(
+            app.seek_selectable(2, -1),
+            Some(1),
+            "backwards past a heading"
+        );
         assert_eq!(app.seek_selectable(3, 1), Some(3), "already on an agent");
-        assert_eq!(app.seek_selectable(0, -1), None, "nothing selectable above the first heading");
+        assert_eq!(
+            app.seek_selectable(0, -1),
+            None,
+            "nothing selectable above the first heading"
+        );
     }
 
     /// Selection is anchored by session id so a refresh that reorders rows does
@@ -554,9 +623,15 @@ mod tests {
             agent("a", "busy", Path::new("/p/one")),
             agent("b", "waiting", Path::new("/p/one")),
         ]);
-        let row = app.row_of_session("a-0123456789").expect("agent a has a row");
+        let row = app
+            .row_of_session("a-0123456789")
+            .expect("agent a has a row");
         assert_eq!(app.agent_at(row).unwrap().session.display_name(), "a");
-        assert_eq!(app.row_of_session("gone-0123456789"), None, "a departed agent is simply absent");
+        assert_eq!(
+            app.row_of_session("gone-0123456789"),
+            None,
+            "a departed agent is simply absent"
+        );
     }
 
     /// Nothing running is the normal state most of the day. Every accessor has

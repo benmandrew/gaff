@@ -29,10 +29,18 @@ fn fixture() -> Fixture {
     let fx = Fixture::new();
     let repo = fx.repo("alpha", "main");
     fx.add_session(
-        &SessionSpec::new(A, &repo).name("first").status("waiting").status_age_mins(4).started_mins_ago(30),
+        &SessionSpec::new(A, &repo)
+            .name("first")
+            .status("waiting")
+            .status_age_mins(4)
+            .started_mins_ago(30),
     );
     fx.add_session(
-        &SessionSpec::new(B, &repo).name("second").status("busy").status_age_mins(2).started_mins_ago(9),
+        &SessionSpec::new(B, &repo)
+            .name("second")
+            .status("busy")
+            .status_age_mins(2)
+            .started_mins_ago(9),
     );
     fx.add_transcript(&repo, A, &ai_title("Centre the tables"));
     fx.add_transcript(&repo, B, &ai_title("Benchmark the solver"));
@@ -49,13 +57,24 @@ fn tui_renders_the_agents_it_finds() {
     // The footer is the last row ratatui paints, so its arrival is the signal
     // that a whole frame has been read rather than half of one.
     pty.wait_for("a fully painted frame", |s| {
-        s.contains("Centre the tables") && s.contains("Benchmark the solver") && s.contains("j/k move")
+        s.contains("Centre the tables")
+            && s.contains("Benchmark the solver")
+            && s.contains("j/k move")
     });
 
     let screen = pty.screen.text();
-    assert!(screen.contains("2 agents in 1 project"), "header summary missing:\n{screen}");
-    assert!(screen.contains("alpha"), "project heading missing:\n{screen}");
-    assert!(screen.contains("~/projects/alpha"), "project path missing:\n{screen}");
+    assert!(
+        screen.contains("2 agents in 1 project"),
+        "header summary missing:\n{screen}"
+    );
+    assert!(
+        screen.contains("alpha"),
+        "project heading missing:\n{screen}"
+    );
+    assert!(
+        screen.contains("~/projects/alpha"),
+        "project path missing:\n{screen}"
+    );
     // Labels that exist nowhere but the detail pane, so this really is the pane
     // for the selected agent and not a stray match in the table.
     assert!(screen.contains("uptime"), "detail pane missing:\n{screen}");
@@ -79,18 +98,28 @@ fn j_and_k_move_the_selection_between_agents() {
     });
 
     pty.send(b"j");
-    pty.wait_for("selection on the second agent", |s| s.selected_row().contains("second"));
-    assert!(!pty.screen.selected_row().contains("first"), "two rows selected at once");
+    pty.wait_for("selection on the second agent", |s| {
+        s.selected_row().contains("second")
+    });
+    assert!(
+        !pty.screen.selected_row().contains("first"),
+        "two rows selected at once"
+    );
 
     pty.send(b"k");
-    pty.wait_for("selection back on the first agent", |s| s.selected_row().contains("first"));
+    pty.wait_for("selection back on the first agent", |s| {
+        s.selected_row().contains("first")
+    });
 
     // Nothing above the first agent is selectable, so this must be a no-op
     // rather than parking the cursor on the heading.
     pty.send(b"k");
     std::thread::sleep(Duration::from_millis(300));
     pty.drain();
-    assert!(pty.screen.selected_row().contains("first"), "cursor left the first agent");
+    assert!(
+        pty.screen.selected_row().contains("first"),
+        "cursor left the first agent"
+    );
 
     pty.send(b"q");
     assert_eq!(pty.wait_for_exit(), 0);
@@ -109,8 +138,14 @@ fn q_quits_and_restores_the_terminal() {
     assert_eq!(pty.wait_for_exit(), 0, "quit must be a clean exit");
 
     let raw = String::from_utf8_lossy(&pty.raw).into_owned();
-    assert!(raw.contains("\x1b[?1049h"), "never entered the alternate screen");
-    assert!(raw.contains("\x1b[?1049l"), "left the alternate screen behind");
+    assert!(
+        raw.contains("\x1b[?1049h"),
+        "never entered the alternate screen"
+    );
+    assert!(
+        raw.contains("\x1b[?1049l"),
+        "left the alternate screen behind"
+    );
     assert!(raw.contains("\x1b[?25h"), "left the cursor hidden");
 }
 
@@ -155,13 +190,24 @@ impl Pty {
         let mut envp: Vec<*const libc::c_char> = env.iter().map(|s| s.as_ptr()).collect();
         envp.push(std::ptr::null());
 
-        let mut ws =
-            libc::winsize { ws_row: ROWS, ws_col: COLS, ws_xpixel: 0, ws_ypixel: 0 };
+        let mut ws = libc::winsize {
+            ws_row: ROWS,
+            ws_col: COLS,
+            ws_xpixel: 0,
+            ws_ypixel: 0,
+        };
         let mut master: libc::c_int = -1;
 
         // SAFETY: the child branch execs immediately and touches nothing else;
         // the pointers handed to execve outlive the call.
-        let pid = unsafe { libc::forkpty(&mut master, std::ptr::null_mut(), std::ptr::null_mut(), &mut ws) };
+        let pid = unsafe {
+            libc::forkpty(
+                &mut master,
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+                &mut ws,
+            )
+        };
         assert!(pid >= 0, "forkpty: {}", std::io::Error::last_os_error());
         if pid == 0 {
             unsafe {
@@ -200,13 +246,23 @@ impl Pty {
                 tv_sec: timeout.as_secs() as _,
                 tv_usec: timeout.subsec_micros() as _,
             };
-            if libc::select(self.master + 1, &mut set, std::ptr::null_mut(), std::ptr::null_mut(), &mut tv) <= 0
+            if libc::select(
+                self.master + 1,
+                &mut set,
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+                &mut tv,
+            ) <= 0
             {
                 return;
             }
 
             let mut buf = [0u8; 65536];
-            let n = libc::read(self.master, buf.as_mut_ptr() as *mut libc::c_void, buf.len());
+            let n = libc::read(
+                self.master,
+                buf.as_mut_ptr() as *mut libc::c_void,
+                buf.len(),
+            );
             match n {
                 // The slave closes when the child exits; on macOS that surfaces
                 // as EIO rather than a clean zero-length read.
@@ -262,7 +318,13 @@ impl Pty {
 
     fn send(&mut self, bytes: &[u8]) {
         // SAFETY: writing borrowed bytes to a fd we own.
-        let n = unsafe { libc::write(self.master, bytes.as_ptr() as *const libc::c_void, bytes.len()) };
+        let n = unsafe {
+            libc::write(
+                self.master,
+                bytes.as_ptr() as *const libc::c_void,
+                bytes.len(),
+            )
+        };
         assert_eq!(n, bytes.len() as isize, "short write to pty");
     }
 
@@ -414,7 +476,12 @@ impl Screen {
             return;
         }
         let n = |i: usize, default: usize| -> usize {
-            params.split(';').nth(i).and_then(|p| p.parse().ok()).filter(|v| *v > 0).unwrap_or(default)
+            params
+                .split(';')
+                .nth(i)
+                .and_then(|p| p.parse().ok())
+                .filter(|v| *v > 0)
+                .unwrap_or(default)
         };
         match final_byte {
             'H' | 'f' => {
@@ -480,7 +547,9 @@ impl Screen {
     }
 
     fn contains(&self, needle: &str) -> bool {
-        self.grid.iter().any(|row| row.iter().collect::<String>().contains(needle))
+        self.grid
+            .iter()
+            .any(|row| row.iter().collect::<String>().contains(needle))
     }
 
     /// The selected row, identified by the highlight symbol ratatui draws in its
@@ -493,4 +562,3 @@ impl Screen {
             .unwrap_or_default()
     }
 }
-

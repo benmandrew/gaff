@@ -95,7 +95,10 @@ impl Transcripts {
         }
 
         // The tail held none of the records we wanted; pay for one full pass.
-        if !follower.scanned_fully && follower.info.title.is_none() && follower.info.last_prompt.is_none() {
+        if !follower.scanned_fully
+            && follower.info.title.is_none()
+            && follower.info.last_prompt.is_none()
+        {
             let mut fresh = Info::default();
             consume(path, 0, true, &mut fresh);
             fresh.last_activity = follower.info.last_activity;
@@ -121,7 +124,9 @@ impl Transcripts {
 /// leading partial record is discarded; when it does, discarding would silently
 /// drop the first newly-appended record.
 fn consume(path: &Path, start: u64, aligned: bool, info: &mut Info) -> u64 {
-    let Ok(file) = File::open(path) else { return start };
+    let Ok(file) = File::open(path) else {
+        return start;
+    };
     let mut reader = BufReader::new(file);
 
     let mut pos = start;
@@ -183,7 +188,9 @@ fn apply(line: &str, info: &mut Info) {
         worktree_session: Option<WorktreeSession>,
     }
 
-    let Ok(rec) = serde_json::from_str::<Record>(line) else { return };
+    let Ok(rec) = serde_json::from_str::<Record>(line) else {
+        return;
+    };
     // These records recur through a transcript; last one wins.
     match rec.kind.as_str() {
         "ai-title" => info.title = rec.ai_title.or(info.title.take()),
@@ -203,7 +210,11 @@ mod tests {
     use std::io::Write;
 
     fn append(path: &Path, text: &str) {
-        let mut f = std::fs::OpenOptions::new().create(true).append(true).open(path).unwrap();
+        let mut f = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(path)
+            .unwrap();
         f.write_all(text.as_bytes()).unwrap();
     }
 
@@ -237,7 +248,10 @@ mod tests {
         assert_eq!(t.read(&p).title.as_deref(), Some("Center tables"));
 
         // Only the appended bytes are re-read, but the newer title must win.
-        append(&p, "{\"type\":\"ai-title\",\"aiTitle\":\"Handle overflow\"}\n");
+        append(
+            &p,
+            "{\"type\":\"ai-title\",\"aiTitle\":\"Handle overflow\"}\n",
+        );
         assert_eq!(t.read(&p).title.as_deref(), Some("Handle overflow"));
     }
 
@@ -265,7 +279,11 @@ mod tests {
         append(&p, &TITLE[..TITLE.len() - 20]);
 
         let mut t = Transcripts::default();
-        assert_eq!(t.read(&p).title, None, "half-written line must not be parsed");
+        assert_eq!(
+            t.read(&p).title,
+            None,
+            "half-written line must not be parsed"
+        );
 
         append(&p, &format!("{}\n", &TITLE[TITLE.len() - 20..]));
         assert_eq!(t.read(&p).title.as_deref(), Some("Center tables"));
@@ -290,9 +308,15 @@ mod tests {
     fn malformed_lines_are_skipped() {
         let dir = tempfile::tempdir().unwrap();
         let p = dir.path().join("s.jsonl");
-        append(&p, &format!("not json at all\n{{\"type\":\"ai-title\" truncated\n{TITLE}\n"));
+        append(
+            &p,
+            &format!("not json at all\n{{\"type\":\"ai-title\" truncated\n{TITLE}\n"),
+        );
 
-        assert_eq!(Transcripts::default().read(&p).title.as_deref(), Some("Center tables"));
+        assert_eq!(
+            Transcripts::default().read(&p).title.as_deref(),
+            Some("Center tables")
+        );
     }
 
     #[test]
