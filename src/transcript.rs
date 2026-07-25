@@ -195,11 +195,7 @@ fn apply(line: &str, info: &mut Info) {
     match rec.kind.as_str() {
         "ai-title" => info.title = rec.ai_title.or(info.title.take()),
         "last-prompt" => info.last_prompt = rec.last_prompt.or(info.last_prompt.take()),
-        "worktree-state" => {
-            if rec.worktree_session.is_some() {
-                info.worktree = rec.worktree_session;
-            }
-        }
+        "worktree-state" => info.worktree = rec.worktree_session.or(info.worktree.take()),
         _ => {}
     }
 }
