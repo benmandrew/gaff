@@ -48,6 +48,15 @@ cargo build --release
 cargo test
 ```
 
+Continuous integration (CI) checks formatting, runs clippy with `-D warnings`,
+builds in debug and runs the tests. The same formatting and lint pair is
+available as a *pre-commit hook*, which each clone enables once — git does not
+clone hooks:
+
+```
+git config core.hooksPath .githooks
+```
+
 ## Usage
 
 ```

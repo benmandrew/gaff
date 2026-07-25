@@ -81,3 +81,24 @@ selectable; that is a browser limitation, not something to fix here.
 truncation and malformed input; `git.rs` builds a real repo with a real worktree.
 There is no test harness for the TUI itself — verify rendering by driving the
 binary in a pty.
+
+## CI and the pre-commit hook
+
+`.github/workflows/ci.yml` runs, in order, `cargo fmt --check`, clippy with
+`-D warnings`, a debug build and the tests. Cheapest check first, so a formatting
+slip fails in seconds instead of after the test run. Linux only: the pty tests
+fork a terminal through libc.
+
+Strictness lives in the clippy step, not in a job-wide `RUSTFLAGS: -D warnings` —
+that variable reaches dependency compilation too, so an upstream deprecation
+would break CI on a day nothing here changed.
+
+`.githooks/pre-commit` runs the same two checks locally. Hooks are not cloned, so
+each checkout opts in once:
+
+```
+git config core.hooksPath .githooks
+```
+
+The hook checks and refuses; it never rewrites files mid-commit. `--no-verify`
+skips it.

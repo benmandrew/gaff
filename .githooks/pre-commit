@@ -1,0 +1,20 @@
+#!/bin/sh
+# Formatting and lint gate, matching the first two steps of CI. Enable with:
+#
+#   git config core.hooksPath .githooks
+#
+# Checks only — a hook that rewrites files mid-commit would stage work the author
+# never looked at. `git commit --no-verify` skips it.
+set -e
+
+if ! cargo fmt --all --check; then
+	echo
+	echo "pre-commit: formatting differs. Run: cargo fmt --all" >&2
+	exit 1
+fi
+
+if ! cargo clippy --all-targets --all-features -- -D warnings; then
+	echo
+	echo "pre-commit: clippy found problems. Fix them, or allow the lint locally." >&2
+	exit 1
+fi
