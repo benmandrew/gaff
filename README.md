@@ -44,20 +44,9 @@ Refreshes are driven by filesystem events on the registry directory and on the p
 ## Building
 
 ```
-cargo build --release    # 608,624 bytes at target/release/gaff
-cargo test               # 10 tests
+cargo build --release
+cargo test
 ```
-
-The release profile trades speed for size — `opt-level = "z"`, fat link-time optimisation (LTO), one codegen unit, and `panic = "abort"` — which is the right trade when the work is a few file reads per second. That takes the binary from 1,054,048 bytes to 608,624.
-
-Rebuilding the standard library removes a further 115,472 bytes, at the cost of needing a nightly toolchain, the `rust-src` component and an explicit target:
-
-```
-cargo build --release -Z build-std=std,panic_abort --target aarch64-apple-darwin
-# 493,152 bytes
-```
-
-Adding `-Z build-std-features=panic_immediate_abort` on top would shrink it further, but it fails to compile `core` on the nightly tested (`1.99.0-nightly`, 2026-07-23).
 
 ## Usage
 
