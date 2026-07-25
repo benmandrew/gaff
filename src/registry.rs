@@ -33,8 +33,19 @@ pub struct Session {
 }
 
 impl Session {
+    /// A name to show in the `AGENT` column, falling back to the session id's
+    /// first eight bytes — or to the id whole when that would split a character
+    /// or run off the end.
+    ///
+    /// `get` rather than a slice, because the id belongs to Claude Code and
+    /// nothing guarantees its length or encoding. This is called from the render
+    /// path, so a panic here takes the TUI down instead of degrading one column.
+    /// `ui` truncates to the column width regardless, so an over-long fallback
+    /// costs nothing.
     pub fn display_name(&self) -> &str {
-        self.name.as_deref().unwrap_or(&self.session_id[..8])
+        self.name
+            .as_deref()
+            .unwrap_or_else(|| self.session_id.get(..8).unwrap_or(&self.session_id))
     }
 
     pub fn status_str(&self) -> &str {
@@ -204,6 +215,23 @@ mod tests {
 
         let unnamed = parse(r#"{"pid":1,"sessionId":"abcd1234-5678","cwd":"/r"}"#);
         assert_eq!(unnamed.display_name(), "abcd1234");
+    }
+
+    /// The id is another program's field, so nothing about its length or
+    /// encoding is guaranteed. Both of these used to panic on a raw `[..8]`
+    /// slice, and from the render path, which took the whole TUI down rather
+    /// than degrading the one column that could not be filled.
+    #[test]
+    fn a_short_or_multi_byte_session_id_does_not_panic() {
+        let short = parse(r#"{"pid":1,"sessionId":"abc","cwd":"/r"}"#);
+        assert_eq!(short.display_name(), "abc");
+
+        // Byte 8 falls inside the third character, so slicing there is a panic.
+        let wide = parse(r#"{"pid":1,"sessionId":"日本語テスト","cwd":"/r"}"#);
+        assert_eq!(wide.display_name(), "日本語テスト");
+
+        let empty = parse(r#"{"pid":1,"sessionId":"","cwd":"/r"}"#);
+        assert_eq!(empty.display_name(), "");
     }
 
     /// An unrecognised or missing status must render as a word, since `ui`
