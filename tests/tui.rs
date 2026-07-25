@@ -205,7 +205,10 @@ impl Pty {
                 &mut master,
                 std::ptr::null_mut(),
                 std::ptr::null_mut(),
-                &mut ws,
+                // A raw pointer, not `&mut ws`: the winsize argument is
+                // `*const` on Linux and `*mut` on macOS, and only a raw pointer
+                // satisfies both without tripping clippy on one of them.
+                &raw mut ws,
             )
         };
         assert!(pid >= 0, "forkpty: {}", std::io::Error::last_os_error());
