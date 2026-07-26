@@ -18,7 +18,8 @@ tempfile = "3"
 
 [profile.release]
 # Size matters more than speed here: the work is a few file reads per second.
-# 1,054,048 -> 608,624 bytes. See README for the build-std route to 493,152.
+# 1,054,048 -> 608,624 bytes. Rebuilding std on nightly reaches 493,152, which
+# is not worth a nightly toolchain and an explicit target for 115 KiB.
 opt-level = "z"
 lto = "fat"
 codegen-units = 1
